@@ -15,14 +15,14 @@ jobs:
         with:
             private_key: ${{ secrets.ICUB_TECH_CODE_APP_KEY }}
             app_id: ${{ secrets.ICUB_TECH_CODE_APP_ID }}
-            repository: icub-tech-iit/code
+            repository: vtikha/code
         
       # we checkout appsAway code
       - uses: actions/checkout@v2
         env:
             GITHUB_APPS_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         with:
-          repository: icub-tech-iit/code
+          repository: vtikha/code
           token: ${{ env.GITHUB_APPS_TOKEN }}
           path: code
           ref: ${{ github.event.client_payload.branch_name }}

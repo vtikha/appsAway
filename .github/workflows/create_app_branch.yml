@@ -19,14 +19,14 @@ jobs:
         with:
           private_key: ${{ secrets.ICUB_TECH_CODE_APP_KEY }}
           app_id: ${{ secrets.ICUB_TECH_CODE_APP_ID }}
-          repository: icub-tech-iit/code
+          repository: vtikha/code
       - name: Checkout Code repository
         uses: actions/checkout@v2
         env:
           GITHUB_APPS_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         with:
           token: ${{ env.GITHUB_APPS_TOKEN }}
-          repository: icub-tech-iit/code
+          repository: vtikha/code
           path: code
           ref: ${{ github.event.client_payload.branch_name }}
       - name: check working directory
@@ -109,7 +109,7 @@ jobs:
             rm -rf code
       - uses: actions/checkout@v2
         with:
-          repository: icub-tech-iit/appsAway
+          repository: vtikha/appsAway
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.client_payload.branch_name }}
 

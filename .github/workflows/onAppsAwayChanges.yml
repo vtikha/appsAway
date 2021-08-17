@@ -62,7 +62,7 @@ jobs:
         with:
           private_key: ${{ secrets.ICUB_TECH_CODE_APP_KEY }}
           app_id: ${{ secrets.ICUB_TECH_CODE_APP_ID }}
-          repository: icub-tech-iit/code
+          repository: vtikha/code
             
       - name: Repository dispatch to code
         uses: peter-evans/repository-dispatch@v1
@@ -71,7 +71,7 @@ jobs:
           GITHUB_APPS_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
         with:
           token: ${{ env.GITHUB_APPS_TOKEN }}   
-          repository: icub-tech-iit/code
+          repository: vtikha/code
           event-type: app_testing_from_appsaway
           client-payload: '{"type": "app_testing_from_appsaway",  "app_list": "${{ steps.set_app_list.outputs.apps}}"}'
 
