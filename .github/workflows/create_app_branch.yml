@@ -42,14 +42,6 @@ jobs:
             ls
             pwd
             
-      - name: copies app folder
-        run: |
-            mv ./test/tmp.md ./
-            mv -v ./test/* ./appsAway/demos/
-            mv ./tmp.md ./test/
-      - name: clean working directory
-        run: |
-            rm -rf code
       - name: get file data
         id: get_filedata
         run: |
@@ -75,7 +67,15 @@ jobs:
               echo $appname_list
               echo ::set-output name=user_list::$user_list
               echo ::set-output name=appname_list::$appname_list
-            
+      - name: copies app folder
+        run: |
+            mv ./test/tmp.md ./
+            mv -v ./test/* ./appsAway/demos/
+            mv ./tmp.md ./test/
+      - name: clean working directory
+        run: |
+            rm -rf code
+            ls
       - name: pull-request
         id: open-pr
         uses: peter-evans/create-pull-request@v3
