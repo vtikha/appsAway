@@ -53,7 +53,9 @@ jobs:
       - name: get file data
         id: get_filedata
         run: |
-              cd ./test/
+              pwd
+              ls
+              cd test
               app_list=$(ls -p | grep / )
               len_list=${#app_list[@]}
               iter=0
