@@ -135,13 +135,14 @@ jobs:
       #        echo $appname_list
       #        echo ::set-output name=user_list::$user_list
       #        echo ::set-output name=appname_list::$appname_list
-              
+            
       - name: pull-request
-        uses: repo-sync/pull-request@v2
+        id: open-pr
+        uses: peter-evans/create-pull-request@v3
         with:
-            pr_title: "Adding new applications to the website."
-            pr_body: ${{ steps.get_filedata.outputs.appname_list }}
-            pr_reviewer: "AlexAntn,vtikha,ilaria-carlini"
-            pr_assignee: ${{ steps.get_filedata.outputs.user_list }}
-            source_branch: ${{ github.event.client_payload.branch_name }}
-            github_token: ${{ secrets.GITHUB_TOKEN }}
+            base: master
+            branch: ${{ github.event.client_payload.branch_name }}
+            title: "Adding new applications to the website."
+            body: ${{ steps.get_filedata.outputs.appname_list }}
+            assignees: ${{ steps.get_filedata.outputs.user_list }}
+            reviewers: "AlexAntn,vtikha,ilaria-carlini"
