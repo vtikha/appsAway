@@ -75,7 +75,6 @@ jobs:
       - name: clean working directory
         run: |
             rm -rf code
-            ls
       - name: pull-request
         id: open-pr
         uses: peter-evans/create-pull-request@v3
@@ -83,6 +82,6 @@ jobs:
             path: appsAway
             branch: ${{ github.event.client_payload.branch_name }}
             title: "Adding new applications to the website."
-            body: ${{ steps.get_filedata.outputs.appname_list }}
+            body: "Applications added: ${{ steps.get_filedata.outputs.appname_list }}"
             assignees: ${{ steps.get_filedata.outputs.user_list }}
             reviewers: "AlexAntn,vtikha,ilaria-carlini"
