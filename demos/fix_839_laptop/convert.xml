@@ -1,0 +1,94 @@
+<application>
+    <name>robot_script</name>
+
+    <!-- Blinkers -->
+    <module>
+        <parameters>--autoStart</parameters>
+        <node>icubsrv</node>
+    </module>
+    
+    <module>
+        <name>gaze.lua</name>
+        <parameters>--look-around</parameters>
+        <deployer>lua</deployer>
+        <node>icubsrv</node>
+        <dependencies>
+            <port timeout="10">/iKinGazeCtrl/angles:i</port>
+            <port timeout="10">/iKinGazeCtrl/angles:o</port>
+        </dependencies>
+    </module>
+
+    <module>
+        <name>iSpeak</name>
+        <parameters></parameters>
+        <node>icubsrv</node>
+    </module>
+    <module>
+        <name>ctpService</name>
+        <parameters>--robot icub --part torso</parameters>
+        <node>icubsrv</node>
+    </module>
+    <module>
+        <name>ctpService</name>
+        <parameters>--robot icub --part left_arm</parameters>
+        <node>icubsrv</node>
+    </module>
+    <module>
+        <name>ctpService</name>
+        <parameters>--robot icub --part right_arm</parameters>
+        <node>icubsrv</node>
+    </module>
+    <module>
+        <name>ctpService</name>
+        <parameters>--robot icub --part torso</parameters>
+        <node>icubsrv</node>
+    </module>
+    <module>
+        <name>ctpService</name>
+        <parameters>--robot icub --part head</parameters>
+        <node>icubsrv</node>
+    </module>
+
+    <!-- Connections -->
+    <connection>
+        <from>/iSpeak/speech-dev/rpc</from>
+        <to>/icub/speech:rpc</to>
+        <protocol>tcp</protocol>
+    </connection> 
+    	
+    <connection>
+        <from>/iCubBlinker/emotions/raw</from>
+        <to>/icub/face/raw/in</to>
+        <protocol>tcp</protocol>
+    </connection> 
+    
+     <connection>
+        <from>/gaze/tx</from>
+        <to>/iKinGazeCtrl/angles:i</to>
+        <protocol>tcp</protocol>
+    </connection>
+    <connection>
+        <from>/iKinGazeCtrl/angles:o</from>
+        <to>/gaze/rx</to>
+        <protocol>tcp</protocol>
+    </connection>
+    
+    <connection>
+        <from>/iSpeak/speech-dev/rpc</from>
+        <to>/googleSynthesis/rpc</to>
+        <protocol>tcp</protocol>
+    </connection> 
+    <connection>
+        <from>/iSpeak/emotions:o</from>
+        <to>/icub/face/emotions/in</to>
+        <protocol>tcp</protocol>
+    </connection> 
+</application>
+
+
+
+
+
+
+
+
