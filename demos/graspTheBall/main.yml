@@ -1,22 +1,16 @@
 version: "3.7"
 
 x-yarp-base: &yarp-base
-  image: icubteamcode/grasp-the-ball:v2021.02.feat-01_master-stable_sources
+  image: icubteamcode/grasp-the-ball:v2022.02.0_sources
   environment:
-    - DISPLAY=${DISPLAY}
-    - QT_X11_NO_MITSHM=1
-    - XAUTHORITY=/root/.Xauthority
     - YARP_FORWARD_LOG_ENABLE=1
     - CALIB_COLOR
     - CALIB_OFFSETS
-    - HAND_VERSION
     - ARM
     - YARP_ROBOT_NAME
   volumes:
-    - "/tmp/.X11-unix:/tmp/.X11-unix"
-    - "${XAUTHORITY}:/root/.Xauthority"
     - "${HOME}/${YARP_CONF_PATH}:/root/.config/yarp"
-    - "${APPSAWAY_DEMOREDBALL_CONTEXT}:/usr/local/share/ICUBcontrib/contexts/demoRedBall/:rw"
+    - "${APPSAWAY_DEMOREDBALL_CONTEXT}:/usr/local/share/ICUBcontrib/contexts/demoRedBall/"
   networks:
     - hostnet
 
@@ -41,14 +35,14 @@ services:
         constraints: [node.role == manager]
       restart_policy:
         condition: on-failure
-    command: sh -c "yarp where | grep 'is available at ip' > /dev/null ; if [ ! $$? -eq 0 ]; then yarpserver --write; fi"
+    command: sh -c "yarp where | grep 'is available at ip' > /dev/null ; if [ ! $$? -eq 0 ]; then yarpserver --read; fi"
 
   yCartesianSolver_r:
     <<: *yarp-base
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "checkRobotInterface; iKinCartesianSolver --part right_arm"
+    command: sh -c "yarp wait /icub/right_arm/state:o; iKinCartesianSolver --part right_arm"
     #<port timeout="60.0" request="is_ready" reply="[ok]">/icub/yarprobotinterface</port>
 
   yCartesianSolver_l:
@@ -56,7 +50,7 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "checkRobotInterface; iKinCartesianSolver --part left_arm"
+    command: sh -c "yarp wait /icub/left_arm/state:o; iKinCartesianSolver --part left_arm"
     #<port timeout="60.0" request="is_ready" reply="[ok]">/icub/yarprobotinterface</port>
 
   yGazeCtrl:
@@ -64,7 +58,7 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "checkRobotInterface; yarp wait /imuFilter/measures:o; iKinGazeCtrl --from iKinGazeCtrl.ini --imu::mode off"
+    command: sh -c "yarp wait /icub/head/state:o; yarp wait /imuFilter/measures:o; iKinGazeCtrl --from iKinGazeCtrl.ini --imu::mode off"
     #note: in our issue we used this configuration file config_no_imu_filter.ini,, but I could not find it.
     #<port timeout="60.0" request="is_ready" reply="[ok]">/icub/yarprobotinterface</port>
 
@@ -73,7 +67,7 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "checkRobotInterface; wholeBodyDynamics --autoconnect --no_legs --headV2"
+    command: sh -c "yarp wait /icub/head/state:o; yarp wait /icub/torso/state:o; yarp wait /icub/right_arm/state:o; yarp wait /icub/left_arm/state:o; yarp wait /icub/inertial; wholeBodyDynamics --autoconnect --no_legs --headV2"
     #note: Do I add --headV2 option??.
     #note: We need to check if WBD is already running, because some yarprobotinterface configuration files already contain it.
     # <port timeout="60.0" request="is_ready" reply="[ok]">/icub/yarprobotinterface</port>
@@ -83,7 +77,7 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "gravityCompensator --autoconnect --no_legs --headV2"
+    command: sh -c "yarp wait /wholeBodyDynamics/filtered/inertial:o; gravityCompensator --autoconnect --no_legs --headV2"
     #note: Do I add --headV2 option??.
 
 #------------------------------------------------------------------------------------------------
@@ -101,14 +95,14 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_LEFT --name /icub/camcalib/left"
+    command: sh -c "yarp wait /icub/cam/left; camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_LEFT --name /icub/camcalib/left"
 
   yCamCalib_r:
     <<: *yarp-base
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_RIGHT --name /icub/camcalib/right"
+    command: sh -c "yarp wait /icub/cam/right; camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_RIGHT --name /icub/camcalib/right"
 
   yConnectCam_l:
     <<: *yarp-base
@@ -175,7 +169,7 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "if [ ${CALIB_OFFSETS} = false ]; then yarp wait /icub/camcalib/left/out; yarp wait /iKinGazeCtrl/rpc; yarp wait /icub/cartesianController/right_arm/state:o; yarp wait /icub/cartesianController/left_arm/state:o; yarp wait /wholeBodyDynamics/right_arm/FT:i; yarp wait /wholeBodyDynamics/left_arm/FT:i; yarp wait /cartesianSolver/left_arm/rpc; yarp wait /cartesianSolver/right_arm/rpc; demoRedBall; fi;"
+    command: sh -c "if [ ${CALIB_OFFSETS} = false ]; then yarp wait /icub/camcalib/left/out; yarp wait /iKinGazeCtrl/rpc; yarp wait /icub/cartesianController/right_arm/state:o; yarp wait /icub/cartesianController/left_arm/state:o; yarp wait /wholeBodyDynamics/right_arm/FT:i; yarp wait /wholeBodyDynamics/left_arm/FT:i; yarp wait /cartesianSolver/left_arm/rpc; yarp wait /cartesianSolver/right_arm/rpc; yarp wait /pf3dTracker/data:o; demoRedBall; fi;"
 
   yConnectCam2Traker:
     <<: *yarp-base
@@ -221,7 +215,7 @@ services:
       restart_policy:
         condition: on-failure
     command: sh -c "if [ ${CALIB_COLOR} = true ]; then yarp wait /icub/camcalib/left/out; yarp wait /pf3dTracker/video:i; calibColor; fi;"
- 
+
   ySkinManager:
     <<: *yarp-base
     deploy:
@@ -230,42 +224,6 @@ services:
       restart_policy:
         condition: on-failure
     command: sh -c "if [ ${CALIB_OFFSETS} = true ]; then checkRobotInterface; skinManager --from skinManAll.ini --context skinGui; fi;"
-
-  #yiCubSkinGuiLeft:
-  #  <<: *yarp-base
-  #  deploy:
-  #    placement:
-  #      constraints: [node.labels.type != head]
-  #    restart_policy:
-  #      condition: on-failure
-  #  command: sh -c "if [ ${CALIB_OFFSETS} = true ]; then iCubSkinGui --from left_hand_${HAND_VERSION}.ini --useCalibration --xpos 320 --ypos 0 --width 300 --height 300; fi;"
-
-  #yiCubSkinGuiRight:
-  #  <<: *yarp-base
-  #  deploy:
-  #    placement:
-  #      constraints: [node.labels.type != head]
-  #    restart_policy:
-  #      condition: on-failure
-  #  command: sh -c "if [ ${CALIB_OFFSETS} = true ]; then iCubSkinGui --from right_hand_${HAND_VERSION}.ini --useCalibration --xpos 320 --ypos 0 --width 300 --height 300; fi;"
-
-  yConnectLeftSkin:
-    <<: *yarp-base
-    deploy:
-      placement:
-        constraints: [node.labels.type != head]
-      restart_policy:
-        condition: on-failure
-    command: sh -c "if [ ${CALIB_OFFSETS} = true ]; then yarp wait /icub/skin/left_hand_comp; yarp wait /skinGui/left_hand:i; yarp connect /icub/skin/left_hand_comp /skinGui/left_hand:i fast_tcp; fi;"
-
-  yConnectRightSkin:
-    <<: *yarp-base
-    deploy:
-      placement:
-        constraints: [node.labels.type != head]
-      restart_policy:
-        condition: on-failure
-    command: sh -c "if [ ${CALIB_OFFSETS} = true ]; then yarp wait /icub/skin/right_hand_comp; yarp wait /skinGui/right_hand:i; yarp connect /icub/skin/right_hand_comp /skinGui/right_hand:i fast_tcp; fi;"
 
   yConnectLeftCam2Color:
     <<: *yarp-base

@@ -1,18 +1,18 @@
 version: "3.7"
 
 x-yarp-base: &yarp-base
-  image: icubteamcode/google-vision:master_master-unstable_sources
+  image: icubteamcode/google-vision:v2022.02.0_sources
   environment:
     - DISPLAY=${DISPLAY}
     - XAUTHORITY=/root/.Xauthority
     - YARP_FORWARD_LOG_ENABLE=1
     - YARP_ROBOT_NAME
-    - FILE_INPUT
+    - FILE_INPUT=${KEY_FILE}
   volumes:
     - "/tmp/.X11-unix:/tmp/.X11-unix"
     - "${XAUTHORITY}:/root/.Xauthority"
     - "${HOME}/${YARP_CONF_PATH}:/root/.config/yarp"
-    - "${FILE_INPUT_PATH}:/root/authorization"
+    - "${HOME}/${APPSAWAY_APP_PATH_NOT_CONSOLE}/key_folder:/root/authorization"
     - "/dev:/dev"
   network_mode: "host"
   privileged: true
@@ -23,29 +23,23 @@ x-yarp-base: &yarp-base
 
 services:
 #following service are configured in icub-main/app/iCubStartup/scripts/iCubStartup.xml.template
-  
-  yGrabberCameras:
-    <<: *yarp-base
-    devices: 
-      - "/dev/video0:/dev/video0"
-    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then yarpdev --from camera/ServerGrabberDualDragon.ini --split true; fi" 
 
 #------------------------------------------------------------------------------------------------
   #Here we open the viewer to see the output image
   yview_image_o:
     <<: *yarp-base
-    command: yarpview --name /outImage 
+    command: sh -c "yarp wait /googleVisionAI/image:o; if [ -z ${CUSTOM_PORT} ]; then yarp wait /icub/view/left; else yarp wait /startImage; fi; yarpview --name /outImage"
 
   #Here we open the viewer to see icub view
   yview_icub_l:
     <<: *yarp-base
-    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then yarpview --name  /icub/view/left; fi"
-  
+    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; yarp wait /icub/camcalib/left/out; yarpview --name  /icub/view/left; fi"
+
 
   #Here we open the viewer to see the input of the custom port
   yview_port_image_i:
     <<: *yarp-base
-    command: yarpview --name /startImage 
+    command: sh -c "if [ ! -z ${CUSTOM_PORT} ]; then if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; yarp wait ${CUSTOM_PORT}; yarpview --name /startImage; fi"
 
 
 

@@ -1,7 +1,7 @@
 version: "3.7"
 
 x-yarp-base: &yarp-base
-  image: icubteamcode/superbuild-gazebo:master-unstable_sources
+  image: icubteamcode/superbuild-gazebo:v2022.02.0_sources
   environment:
     - DISPLAY=${DISPLAY}
     - QT_X11_NO_MITSHM=1
@@ -23,4 +23,4 @@ services:
   #following service are configured in icub-main/app/iCubStartup/scripts/iCubStartup.xml.template
   gazebo:
     <<: *yarp-base
-    command: gazebo
+    command: sh -c "if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; gazebo"

@@ -96,7 +96,7 @@ export APPSAWAY_TAGS=${5:-\"binaries\"}
 export APPSAWAY_DEPLOY_YAML_FILE_LIST=main.yml
 export APPSAWAY_GUI_YAML_FILE_LIST=composeGui.yml
 export APPSAWAY_STACK_NAME=mystack
-export APPSAWAY_NODES_NAME_LIST=\"console\" 
+export APPSAWAY_NODES_NAME_LIST=\"icubconsole\" 
 export APPSAWAY_NODES_ADDR_LIST=\"\${APPSAWAY_GUINODE_ADDR} \${APPSAWAY_ICUBHEADNODE_ADDR} \${APPSAWAY_CONSOLENODE_ADDR} \${APPSAWAY_CUDANODE_ADDR} \${APPSAWAY_WORKERNODE_ADDR}\" 
 export APPSAWAY_NODES_USERNAME_LIST=\"\${APPSAWAY_GUINODE_USERNAME} \${APPSAWAY_ICUBHEADNODE_USERNAME} \${APPSAWAY_CONSOLENODE_USERNAME} \${APPSAWAY_CUDANODE_USERNAME} \${APPSAWAY_WORKERNODE_USERNAME}\" " > ./appsAway_setEnvironment.local.sh 
 chmod +x appsAway_setEnvironment.local.sh
@@ -106,10 +106,12 @@ echo "images: $APPSAWAY_IMAGES"
 echo "versions: $APPSAWAY_VERSIONS"
 echo "tags: $APPSAWAY_TAGS"
  
+echo "about to setup the swarm..." 
+./appsAway_setupSwarm.sh
+
 echo "about to setup the cluster..." 
 ./appsAway_setupCluster.sh
 
-./appsAway_setupSwarm.sh
 setupEnvironment
 ./appsAway_copyFiles.sh
 check_failure ./appsAway_startApp.sh
@@ -122,3 +124,4 @@ then
     echo "Some commands failed"
     exit 1
 fi
+

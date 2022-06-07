@@ -39,8 +39,12 @@ _DOCKER_BIN=$(which docker || true)
 _DOCKER_PARAMS=""
 _HOSTNAME_LIST=""
 _CWD=$(pwd)
-_OS_HOME_DIR="/home"
-_APPSAWAY_APP_PATH_NOT_CONSOLE="iCubApps/${APPSAWAY_APP_NAME}"
+if [ "$os" = "Darwin" ]
+then
+  _OS_HOME_DIR=/Users
+else
+  _OS_HOME_DIR=/home
+fi
 
 print_defs ()
 {
@@ -123,17 +127,21 @@ init()
    exit_err "docker binary not found"
  fi
  if [ ! -f "${_APPSAWAY_ENV_FILE}" ]; then
-   exit_err "enviroment file ${_APPSAWAY_ENV_FILE} does not exists"
+   exit_err "enviroment file ${_APPSAWAY_ENV_FILE} does not exist"
  fi
  source ${_APPSAWAY_ENV_FILE}
+ if [ ! -f "${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}" ]; then
+   exit_err "enviroment file ${_DOCKER_ENV_FILE} does not exist"
+ fi
+ source ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
  os=`uname -s`
  if [ "$os" = "Darwin" ]
  then
   _ALL_LOCAL_IP_ADDRESSES=$(arp -a | awk -F'[()]' '{print $2}')
+  #' this is to solve the colors issue in code
  else
   _ALL_LOCAL_IP_ADDRESSES=$(hostname --all-ip-address)
   _ALL_LOCAL_IP_ADDRESSES+=$(hostname --all-fqdns)
-  _ALL_LOCAL_IP_ADDRESSES+=localhost
  fi
  if [ "$_ALL_LOCAL_IP_ADDRESSES" == "" ]; then
    exit_err "unable to read local IP addresses"
@@ -251,7 +259,7 @@ fill_hostname_list()
 #  echo "USER_NAME=$APPSAWAY_USER_NAME" >> ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
 #  echo "USER_PASSWORD=$APPSAWAY_USER_PASSWORD" >> ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
 #  echo "MASTER_ADDR=$APPSAWAY_CONSOLENODE_ADDR" >> ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
-#  echo "YARP_CONF_PATH=${_APPSAWAY_APP_PATH_NOT_CONSOLE}/${_YARP_CONFIG_FILES_PATH}" >> ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
+#  echo "YARP_CONF_PATH=${APPSAWAY_APP_PATH_NOT_CONSOLE}/${_YARP_CONFIG_FILES_PATH}" >> ${APPSAWAY_APP_PATH}/${_DOCKER_ENV_FILE}
 #}
 
 overwrite_yaml_files()
@@ -282,9 +290,9 @@ overwrite_yaml_files()
             echo "overwriting ${list_yml_images[$j]} with ${list_images[$j]} in ${yml_files[$i]}" 
             if [[ ${list_versions[$j]} == "n/a" ]]
             then
-              sed -i 's,image: '"${list_yml_images[$j]}"'.*$,image: '"${list_images[$j]}"':'"${list_tags[$j]}"',g' ${yml_files[$i]}
+              sed -i 's,image: '"${list_yml_images[$j]}"':.*$,image: '"${list_images[$j]}"':'"${list_tags[$j]}"',g' ${yml_files[$i]}
             else
-              sed -i 's,image: '"${list_yml_images[$j]}"'.*$,image: '"${list_images[$j]}"':'"${list_versions[$j]}"'_'"${list_tags[$j]}"',g' ${yml_files[$i]}
+              sed -i 's,image: '"${list_yml_images[$j]}"':.*$,image: '"${list_images[$j]}"':'"${list_versions[$j]}"'_'"${list_tags[$j]}"',g' ${yml_files[$i]}
             fi 
         done         
       fi
@@ -401,27 +409,27 @@ copy_yaml_files()
     fi
   done
   if [ "$APPSAWAY_ICUBHEADNODE_ADDR" != "" ]; then
-    head_path=${_OS_HOME_DIR}/${APPSAWAY_ICUBHEADNODE_USERNAME}/${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+    head_path=${_OS_HOME_DIR}/${APPSAWAY_ICUBHEADNODE_USERNAME}/${APPSAWAY_APP_PATH_NOT_CONSOLE}
     log "creating path ${head_path} on node with IP ${APPSAWAY_ICUBHEADNODE_ADDR}"
     ${_SSH_BIN} ${_SSH_PARAMS} ${APPSAWAY_ICUBHEADNODE_USERNAME}@${APPSAWAY_ICUBHEADNODE_ADDR} "mkdir -p ${head_path}"
     for file in ${APPSAWAY_HEAD_YAML_FILE_LIST}
     do
       if [ -f "../demos/$APPSAWAY_APP_NAME/$file" ]; then
         log "copying yaml file $file to node with IP ${APPSAWAY_ICUBHEADNODE_ADDR}"
-        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_ICUBHEADNODE_USERNAME} ${APPSAWAY_ICUBHEADNODE_ADDR} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_ICUBHEADNODE_USERNAME} ${APPSAWAY_ICUBHEADNODE_ADDR} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
       fi
     done
   fi
 
   if [ "$APPSAWAY_GUINODE_ADDR" != "" ]; then
-    gui_path=${_OS_HOME_DIR}/${APPSAWAY_GUINODE_USERNAME}/${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+    gui_path=${_OS_HOME_DIR}/${APPSAWAY_GUINODE_USERNAME}/${APPSAWAY_APP_PATH_NOT_CONSOLE}
     log "creating path ${gui_path} on node with IP ${APPSAWAY_GUINODE_ADDR}"
     ${_SSH_BIN} ${_SSH_PARAMS} ${APPSAWAY_GUINODE_USERNAME}@${APPSAWAY_GUINODE_ADDR} "mkdir -p ${gui_path}"
     for file in ${APPSAWAY_GUI_YAML_FILE_LIST}
     do
       if [ -f "../demos/$APPSAWAY_APP_NAME/$file" ]; then
         log "copying yaml file $file to node with IP ${APPSAWAY_GUINODE_ADDR}"
-        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_GUINODE_USERNAME} ${APPSAWAY_GUINODE_ADDR} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_GUINODE_USERNAME} ${APPSAWAY_GUINODE_ADDR} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
       fi
     done
   elif [ "$APPSAWAY_GUINODE_ADDR" == "" ] && [ "$APPSAWAY_CONSOLENODE_ADDR" != "" ]; then
@@ -431,7 +439,7 @@ copy_yaml_files()
     do
       if [ -f "../demos/$APPSAWAY_APP_NAME/$file" ]; then
         log "copying yaml file $file to node with IP ${APPSAWAY_CONSOLENODE_ADDR}"
-        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_CONSOLENODE_USERNAME} ${APPSAWAY_CONSOLENODE_ADDR} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+        scp_to_node ${APPSAWAY_APP_PATH}/${file} ${APPSAWAY_CONSOLENODE_USERNAME} ${APPSAWAY_CONSOLENODE_ADDR} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
       fi
     done
   fi
@@ -451,15 +459,29 @@ copy_yarp_files()
     if [ "$node_ip" != "$APPSAWAY_CONSOLENODE_ADDR" ]; then
       username=$( eval echo "\$$iter")
       log "copying folder on node $node_ip.."
-      scp_to_node ${_DOCKER_ENV_FILE} ${username} ${node_ip} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
-      scp_to_node ${_YARP_CONFIG_FILES_PATH} ${username} ${node_ip} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+      scp_to_node ${_DOCKER_ENV_FILE} ${username} ${node_ip} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
+      scp_to_node ${_YARP_CONFIG_FILES_PATH} ${username} ${node_ip} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
       for folder in ${APPSAWAY_DATA_FOLDERS}
       do
-        scp_to_node ${APPSAWAY_APP_PATH}/${folder} ${username} ${node_ip} ${_APPSAWAY_APP_PATH_NOT_CONSOLE}
+        scp_to_node ${APPSAWAY_APP_PATH}/${folder} ${username} ${node_ip} ${APPSAWAY_APP_PATH_NOT_CONSOLE}
       done
     fi
     iter=$((iter+1))
   done
+}
+
+copy_key_file()
+{
+  if [ "$KEY_FILE" != "" ]
+  then
+    if [ ! -f "$KEY_FILE_PATH/$KEY_FILE" ]; then
+      exit_err "the key file $KEY_FILE you provided does not exist"
+    fi
+
+    # first we copy the key file into iCubApps
+    mkdir -p ${APPSAWAY_APP_PATH}/key_folder/
+    cp ${KEY_FILE_PATH}/${KEY_FILE} ${APPSAWAY_APP_PATH}/key_folder/
+  fi
 }
 
 
@@ -471,6 +493,7 @@ main()
   copy_yaml_files
 #  create_yarp_config_files
 #  create_env_file
+  copy_key_file
   copy_yarp_files
 }
 

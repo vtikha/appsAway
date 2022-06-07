@@ -1,4 +1,4 @@
-function check_failure { #TODO: we can't give a script as input to the function (unless the script is returning something...)
+function check_failure { 
     "$@"
     local status=$?
     if (( status != 0 ))
@@ -34,11 +34,6 @@ function setupEnvironment {
             do
                 sed -i 's,image: '"${list_images[$j]}"'.*$,image: '"${list_images[$j]}"':'"${list_versions[$j]}"'_'"${list_tags[$j]}"',g' ${yml_files[$i]}
             done
-            # while read -r line || [ -n "$line" ]
-            # do
-              
-
-            # done < ${yml_files[$i]} 
         done
       
 
@@ -91,18 +86,19 @@ export APPSAWAY_APP_PATH=\${HOME}/iCubApps/\${APPSAWAY_APP_NAME}
 export APPSAWAY_CONSOLENODE_ADDR=$2
 export APPSAWAY_CONSOLENODE_USERNAME=icub
 export APPSAWAY_IMAGES=${3:-\"icubteamcode/supervise-calib\"}
-export APPSAWAY_VERSIONS=${4:-\"master-unstable_master\"}  
+export APPSAWAY_VERSIONS=${4:-\"master-stable_master\"}  
 export APPSAWAY_TAGS=${5:-\"binaries\"} 
 export APPSAWAY_DEPLOY_YAML_FILE_LIST=main.yml
 export APPSAWAY_GUI_YAML_FILE_LIST=composeGui.yml
 export APPSAWAY_STACK_NAME=mystack
-export APPSAWAY_NODES_NAME_LIST=\"console\" 
+export APPSAWAY_NODES_NAME_LIST=\"icubconsole\" 
 export APPSAWAY_NODES_ADDR_LIST=\"\${APPSAWAY_GUINODE_ADDR} \${APPSAWAY_ICUBHEADNODE_ADDR} \${APPSAWAY_CONSOLENODE_ADDR} \${APPSAWAY_CUDANODE_ADDR} \${APPSAWAY_WORKERNODE_ADDR}\" 
-export APPSAWAY_NODES_USERNAME_LIST=\"\${APPSAWAY_GUINODE_USERNAME} \${APPSAWAY_ICUBHEADNODE_USERNAME} \${APPSAWAY_CONSOLENODE_USERNAME} \${APPSAWAY_CUDANODE_USERNAME} \${APPSAWAY_WORKERNODE_USERNAME}\" " > ./appsAway_setEnvironment.local.sh
+export APPSAWAY_NODES_USERNAME_LIST=\"\${APPSAWAY_GUINODE_USERNAME} \${APPSAWAY_ICUBHEADNODE_USERNAME} \${APPSAWAY_CONSOLENODE_USERNAME} \${APPSAWAY_CUDANODE_USERNAME} \${APPSAWAY_WORKERNODE_USERNAME}\"
+export APPSAWAY_CALIB_CONTEXT=\"/usr/local/src/robot/robotology-superbuild/build/install/share/iCub/contexts/cameraCalibration/icubEyes.ini\" " > ./appsAway_setEnvironment.local.sh
 
-yarpResource=$(yarp resource --context cameraCalibration --from icubEyes.ini)
-resourcePath=$(echo "$yarpResource" | awk -F'"' '{print $2}' | awk -F'icubEyes.ini' '{print $1}')
-echo "export APPSAWAY_CALIB_CONTEXT=$resourcePath" >>appsAway_setEnvironment.local.sh
+#yarpResource=$(yarp resource --context cameraCalibration --from icubEyes.ini)
+#resourcePath=$(echo "$yarpResource" | awk -F'"' '{print $2}' | awk -F'icubEyes.ini' '{print $1}')
+#echo "export APPSAWAY_CALIB_CONTEXT=$resourcePath" >>appsAway_setEnvironment.local.sh
 
 chmod +x appsAway_setEnvironment.local.sh
 source ./appsAway_setEnvironment.local.sh
@@ -111,9 +107,6 @@ echo "images: $APPSAWAY_IMAGES"
 echo "versions: $APPSAWAY_VERSIONS"
 echo "tags: $APPSAWAY_TAGS"
  
-echo "about to setup the cluster..." 
-./appsAway_setupCluster.sh
-
 echo "
 CUSTOM_PATH=false
 RGB_CAMERAS=true
@@ -121,7 +114,12 @@ RESOLUTION=320x240
 EVENT_CAMERAS=false
 MONO_CALIB=false" >> $HOME/iCubApps/$APPSAWAY_APP_NAME/.env 
 
+echo "about to setup the swarm..." 
 ./appsAway_setupSwarm.sh
+
+echo "about to setup the cluster..." 
+./appsAway_setupCluster.sh
+
 setupEnvironment
 ./appsAway_copyFiles.sh
 check_failure ./appsAway_startApp.sh

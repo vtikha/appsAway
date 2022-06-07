@@ -1,7 +1,7 @@
 version: "3.7"
 
 x-yarp-base: &yarp-base
-  image: icubteamcode/grasp-the-ball:v2021.02.feat-01_master-stable_binaries
+  image: icubteamcode/grasp-the-ball:v2022.02.0_sources
   environment:
     - DISPLAY=${DISPLAY}
     - QT_X11_NO_MITSHM=1
@@ -22,16 +22,16 @@ services:
 
   ylogger:
     <<: *yarp-base
-    command: yarplogger --start
+    command: sh -c "if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; yarplogger --start"
 
 #following services are configured in ./icub-main/app/default/scripts/cameras_calib.xml.template
   yview_l:
     <<: *yarp-base
-    command: yarpview --name /icub/view/left --x 0 --y 0 --p 50 --w 320 --h 240
+    command: sh -c "yarp wait /icub/cam/left; yarpview --name /icub/view/left --x 0 --y 0 --p 50 --w 320 --h 240"
 
   yview_r:
     <<: *yarp-base
-    command: yarpview --name /icub/view/right --x 320 --y 0 --p 50 --w 320 --h 240
+    command: sh -c "yarp wait /icub/cam/right; yarpview --name /icub/view/right --x 320 --y 0 --p 50 --w 320 --h 240"
 
   yconnect_l:
     <<: *yarp-base
@@ -51,7 +51,7 @@ services:
 #Following services are configured in icub-basic-demos/demoRedBall/app/scripts/demoRedBall.xml.template
   yview:
     <<: *yarp-base
-    command: yarpview --name /PF3DTracker_viewer --x 320 --y 0 --p 50 --compact
+    command: sh -c "yarp wait /pf3dTracker/video:o; yarpview --name /PF3DTracker_viewer --x 320 --y 0 --p 50 --compact"
 
   yconnect_demo:
     <<: *yarp-base

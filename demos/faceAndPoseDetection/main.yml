@@ -1,18 +1,15 @@
 version: "3.7"
 
 x-yarp-demo: &yarp-demo
-  image: icubteamcode/human-sensing:master_master-unstable_sources #this image name still need to be changed into face-and-pose-detection
+  image: icubteamcode/human-sensing:v2022.02.0_sources
   environment:
-    - DISPLAY=${DISPLAY}
-    - QT_X11_NO_MITSHM=1
-    - XAUTHORITY=/root/.Xauthority
     - YARP_FORWARD_LOG_ENABLE=1
     - CUSTOM_PORT
     - YOP_INPUT
     - FL_INPUT
+    - USE_FACE=false
+    - USE_HANDS=false
   volumes:
-    - "/tmp/.X11-unix:/tmp/.X11-unix"
-    - "${XAUTHORITY}:/root/.Xauthority"
     - "${HOME}/${YARP_CONF_PATH}:/root/.config/yarp"
   networks:
     - hostnet
@@ -28,20 +25,15 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type == cuda]
-      resources:
-        reservations:
-          generic_resources:
-            - discrete_resource_spec:
-                kind: 'gpu'
-                value: 1 #does this work? or do we have to specify a particular number? - answer, number...
-    command: sh -c "if [ ${YOP_INPUT} = 'True' ]; then yarpOpenPose --hand_enable $USE_HANDS --face_enable $USE_FACE --num_gpu 1; fi"
+    command: sh -c "if [ ${YOP_INPUT} = 'True' ]; then if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; yarpOpenPose --hand_enable $USE_HANDS --face_enable $USE_FACE --num_gpu 1; fi"
 
   yDemofaceLandmarks:
     <<: *yarp-demo
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "if [ ${FL_INPUT} = 'True' ]; then faceLandmarks; fi"
+    #command: sh -c "if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; faceLandmarks;"
+    command: sh -c "if [ ${FL_INPUT} = 'True' ]; then if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; faceLandmarks; fi"
 
   yConnectCamToFL_l:
     <<: *yarp-demo
@@ -51,7 +43,7 @@ services:
       restart_policy:
         condition: on-failure
     command: sh -c "if [ ! -z ${CUSTOM_PORT} ]; then yarp wait $CUSTOM_PORT ; yarp wait /faceLandmarks/image:i ; yarp connect $CUSTOM_PORT /faceLandmarks/image:i tcp ; else yarp wait /icub/camcalib/left/out; yarp wait /faceLandmarks/image:i ; yarp connect /icub/camcalib/left/out /faceLandmarks/image:i tcp; fi"
-  
+
   yserver:
     <<: *yarp-demo
     deploy:
@@ -59,7 +51,7 @@ services:
         constraints: [node.role == manager]
       restart_policy:
         condition: on-failure
-    command: sh -c "yarp where | grep 'is available at ip' > /dev/null ; if [ ! $$? -eq 0 ]; then yarpserver --write; fi"
+    command: sh -c "yarp where | grep 'is available at ip' > /dev/null ; if [ ! $$? -eq 0 ]; then yarpserver --read; fi"
 
 #--------------------------------------- Connects ----------------------------------------------
 
@@ -70,19 +62,27 @@ services:
         constraints: [node.labels.type != head]
       restart_policy:
         condition: on-failure
-    command: sh -c "yarp wait /icub/camcalib/left/out; yarp wait /yarpOpenPose/image:i; yarp connect /icub/camcalib/left/out /yarpOpenPose/image:i udp"
-    restart: on-failure
+    command: sh -c "if [ ! -z ${CUSTOM_PORT} ]; then yarp wait ${CUSTOM_PORT}; yarp wait /yarpOpenPose/image:i; yarp connect ${CUSTOM_PORT} /yarpOpenPose/image:i udp; else yarp wait /icub/camcalib/left/out; yarp wait /yarpOpenPose/image:i; yarp connect /icub/camcalib/left/out /yarpOpenPose/image:i udp; fi"
 
-  yconnect_output:
+  yconnect_output_face:
     <<: *yarp-demo
     deploy:
       placement:
         constraints: [node.labels.type != head]
       restart_policy:
         condition: on-failure
-    command: sh -c "if [ ${FL_INPUT} = 'True' ]; then yarp wait /faceLandmarks/image:o ; yarp wait /pose ; yarp connect /faceLandmarks/image:o /pose udp; else yarp wait /yarpOpenPose/image:o ; yarp wait /pose ; yarp connect /yarpOpenPose/image:o /pose udp; fi"
-    restart: on-failure
-  
+    command: sh -c "if [ ${FL_INPUT} = 'True' ]; then yarp wait /faceLandmarks/image:o ; yarp wait /face ; yarp connect /faceLandmarks/image:o /face udp; fi"
+    
+    
+  yconnect_output_pose:
+    <<: *yarp-demo
+    deploy:
+      placement:
+        constraints: [node.labels.type != head]
+      restart_policy:
+        condition: on-failure
+    command: sh -c "if [ ${YOP_INPUT} = 'True' ]; then yarp wait /yarpOpenPose/image:o ; yarp wait /pose ; yarp connect /yarpOpenPose/image:o /pose udp; fi"
+
   yconnect_groundtruth:
     <<: *yarp-demo
     deploy:
@@ -90,10 +90,9 @@ services:
         constraints: [node.labels.type != head]
       restart_policy:
         condition: on-failure
-    command: sh -c "yarp wait /icub/camcalib/left/out ; yarp wait /view/input_image ; yarp connect /icub/camcalib/left/out /view/input_image udp"
-    restart: on-failure
+    command: sh -c "if [ ! -z ${CUSTOM_PORT} ]; then yarp wait ${CUSTOM_PORT}; yarp wait /view/input_image ; yarp connect ${CUSTOM_PORT} /view/input_image udp; else yarp wait /icub/camcalib/left/out ; yarp wait /view/input_image ; yarp connect /icub/camcalib/left/out /view/input_image udp; fi"
 
- 
+
 #------------------------------------------------------------------------------------------------
 #Following services are configured in ./icub-main/app/default/scripts/cameras_calib.xml.template
 
@@ -103,14 +102,14 @@ services:
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_LEFT --name /icub/camcalib/left; fi"
+    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then yarp wait /icub/cam/left; camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_LEFT --name /icub/camcalib/left; fi"
 
   yCamCalib_r:
     <<: *yarp-demo
     deploy:
       placement:
         constraints: [node.labels.type != head]
-    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_RIGHT --name /icub/camcalib/right; fi"
+    command: sh -c "if [ -z ${CUSTOM_PORT} ]; then yarp wait yarp wait /icub/cam/right; camCalib --context cameraCalibration --from icubEyes.ini --group CAMERA_CALIBRATION_RIGHT --name /icub/camcalib/right; fi"
 
   yConnectCam_l:
     <<: *yarp-demo

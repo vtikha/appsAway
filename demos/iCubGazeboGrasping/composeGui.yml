@@ -1,7 +1,7 @@
 version: "3.7"
 
 x-yarp-base: &yarp-base
-  image: icubteamcode/grasp-gazebo:master_master-unstable_sources
+  image: icubteamcode/grasp-gazebo:v2022.02.0_sources
   environment:
     - DISPLAY=${DISPLAY}
     - QT_X11_NO_MITSHM=1
@@ -13,11 +13,6 @@ x-yarp-base: &yarp-base
     - "/tmp/.X11-unix:/tmp/.X11-unix"
     - "${XAUTHORITY}:/root/.Xauthority"
     - "${HOME}/${YARP_CONF_PATH}:/root/.config/yarp"
-    - "/usr/local/cuda/lib64:/usr/lib/nvidia"
-    - "/usr/local/cuda:/usr/local/cuda"
-    - "/usr/lib/x86_64-linux-gnu:/usr/lib/projects/x86_64-linux-gnu"
-    - "/usr/bin:/usr/projects/bin"
-    - "/dev/dri:/dev/dri"
   ports:
     - "10000:10000"
   network_mode: "host"
@@ -34,7 +29,7 @@ services:
 
   gazebo:
     <<: *yarp-base
-    command: sh -c "sleep 10; gazebo -e dart /workspace/iCubContrib/share/gazebo/worlds/icub-gazebo-grasping-sandbox.sdf"
+    command: sh -c "if [ -f "/root/.config/yarp/yarp_namespace.conf" ]; then yarp wait $$(echo $$(cat /root/.config/yarp/yarp_namespace.conf)); else yarp wait /root; fi; gazebo -e dart /workspace/iCubContrib/share/gazebo/worlds/icub-gazebo-grasping-sandbox.sdf"
 
   find-superquadric:
     <<: *yarp-base
@@ -42,7 +37,7 @@ services:
 
   yview:
     <<: *yarp-base
-    command: yarpview --name /view/left --compact --p 10 --x 20 --y 20
+    command: sh -c "yarp wait /icubSim/cam/left/rgbImage:o; yarpview --name /view/left --compact --p 10 --x 20 --y 20"
 
   icub-gazebo-grasping-sandbox:
     <<: *yarp-base
