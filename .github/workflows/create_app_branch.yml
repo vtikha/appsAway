@@ -5,6 +5,10 @@ on:
     repository_dispatch:
         types: [add_app]
 
+
+#            mv -v ./appsAway/user_changes/* ./icub-tech-apps/dist/database/upgrade/
+#            mv -v ./appsAway/user_changes/images/* ./icub-tech-apps/dist/express/images/
+
 jobs:
   update_code:
     runs-on: ubuntu-latest
@@ -29,6 +33,7 @@ jobs:
         run: |
             ls
             pwd
+      #      git checkout ${{ github.event.client-payload.branch_name }}
       - name: copies app folder to temporary folder
         run: |
             cd code
@@ -37,17 +42,24 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: appsAway
+      - name: Create branch
+        run: |
+            cd appsAway
+            git branch ${{ github.event.client_payload.branch_name }}
+          
       - name: check working directory
         run: |
             ls
             pwd
+      - name: checkout created branch
+        run: |
+            cd appsAway
+            git checkout ${{ github.event.client_payload.branch_name }}
             
       - name: get file data
         id: get_filedata
         run: |
-              pwd
-              ls
-              cd test
+              cd ./test/
               app_list=$(ls -p | grep / )
               len_list=${#app_list[@]}
               iter=0
@@ -67,21 +79,98 @@ jobs:
               echo $appname_list
               echo ::set-output name=user_list::$user_list
               echo ::set-output name=appname_list::$appname_list
-      - name: copies app folder
+              ls
+              
+              
+      - name: copies user_changes folder
         run: |
             mv ./test/tmp.md ./
             mv -v ./test/* ./appsAway/demos/
             mv ./tmp.md ./test/
+      - name: Commit changes
+        run: |
+            cd appsAway
+            pwd
+            git status
+            git config --local user.email "actions@github.com"
+            git config --local user.name "GitHub Action"
+            git add -A
+            git commit -m "Merged user changes in appsAway" -a
+        
+      - name: push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.event.client_payload.branch_name }}
+          directory: "./appsAway/"
       - name: clean working directory
         run: |
+            rm -rf appsAway
             rm -rf code
-      - name: pull-request
-        id: open-pr
-        uses: peter-evans/create-pull-request@v3
+      - uses: actions/checkout@v2
         with:
-            path: appsAway
-            branch: ${{ github.event.client_payload.branch_name }}
-            title: "Adding new applications to the website."
-            body: "Applications added: ${{ steps.get_filedata.outputs.appname_list }}"
-            assignees: ${{ steps.get_filedata.outputs.user_list }}
-            reviewers: "AlexAntn,vtikha,ilaria-carlini"
+          repository: vtikha/appsAway
+          ref: ${{ github.event.client_payload.branch_name }}
+      #    token: ${{ secrets.GITHUB_TOKEN }}
+
+      #- name: get file data
+      #  id: get_filedata
+      #  run: |
+      #        cd user_changes
+      #        app_list=$(ls -p | grep / )
+      #        len_list=${#app_list[@]}
+      #        iter=0
+      #        for app in $app_list
+      #        do
+      #          if [ $iter != 0 ];
+      #          then
+      #            user_list="$user_list,"
+      #            appname_list="$appname_list<br/>"
+      #          fi
+      #          user_list="$user_list$(echo $app | awk -F'~' '{print $1}')"
+      #          appname_list="$appname_list$(echo $app | awk -F'~' '{print $2}')"
+      #          iter=$((iter+1))
+      #        done
+      #        echo $user_list
+      #        echo $appname_list
+      #        echo ::set-output name=user_list::$user_list
+      #        echo ::set-output name=appname_list::$appname_list
+              
+      - name: print stuff before PR
+        run: |
+            echo "body: ${{ steps.get_filedata.outputs.appname_list }}"
+            echo "assignees: ${{ steps.get_filedata.outputs.user_list }}"
+            echo "branch: ${{ github.event.client_payload.branch_name }}"
+              
+      - name: pull-request
+        uses: AlexAntn/pull-request@master
+        env:
+            GITHUB_APPS_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        with:
+            pr_title: "Adding new applications to the website."
+            pr_body: ${{ steps.get_filedata.outputs.appname_list }}
+            pr_reviewer: "AlexAntn,vtikha,vvasco,Nicogene"
+            pr_assignee: ${{ steps.get_filedata.outputs.user_list }}
+            source_branch: ${{ github.event.client_payload.branch_name }}
+            destination_branch: "master"
+            github_token: ${{ env.GITHUB_APPS_TOKEN }}
+      - name: output-url
+        run: echo ${{steps.open-pr.outputs.pr_url}}
+      - name: output-number
+        run: echo ${{steps.open-pr.outputs.pr_number}}
+      - name: output-has-changed-files
+        run: echo ${{steps.open-pr.outputs.has_changed_files}}
+      
+      ############################################################################################
+      # UNFORTUNATELY THIS PR ACTION ONLY WORKS FOR LOCAL CHANGES, NOT ALREADY-EXISTING BRANCHES #
+      ############################################################################################
+      #- name: pull-request
+      #  id: open-pr
+      #  uses: peter-evans/create-pull-request@v3
+      #  with:
+      #      path: appsAway
+      #      branch: ${{ github.event.client_payload.branch_name }}
+      #      title: "Adding new applications to the website."
+      #      body: ${{ steps.get_filedata.outputs.appname_list }}
+      #      assignees: ${{ steps.get_filedata.outputs.user_list }}
+      #      reviewers: "AlexAntn,vtikha,vvasco,Nicogene"
