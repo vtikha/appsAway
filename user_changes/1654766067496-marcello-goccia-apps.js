@@ -1,0 +1,4 @@
+//marcello-goccia
+//
+//&<h3>Field changed in app: <ins>Gazebo Simulation Deployment Test</ins></h3><ul><li>title: Gazebo Simulation Deployment<b> Test</b></li><li>description: Deploy a pre configured Docker including Gazebo simulator for your system<b>.\nA test text</b></li><li>category: <del>Sys</del><b>Applica</b>t<del>em</del><b>ion</b></li><li>complexity: <del>0</del><b>2</b></li><li>updated: <del>May</del><b>June</b> 202<del>0</del><b>2</b></li><li>platform: [<b>iCub3,iCub,R1</b>]</li><li>laboratories: [<b>{name:icub,url:www.iit.it}</b>]</li></ul>
+db.apps.update ({_id: ObjectId("5f4375f118a3dc019958fede")},{$set: { title: "Gazebo Simulation Deployment Test",description: "Deploy a pre configured Docker including Gazebo simulator for your system.\nA test text",category: "Application",complexity: "2",updated: "June 2022",platform: ["iCub3","iCub","R1"],laboratories: [{"name":"icub","url":"www.iit.it"}]}});

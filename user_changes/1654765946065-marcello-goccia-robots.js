@@ -1,0 +1,4 @@
+//marcello-goccia
+//
+//&<h3>Field changed in robot: <ins>iCubAberystwyth01</ins></h3><ul><li>gallery: [<b>https://storage.googleapis.com/robot-bazaar-files/robots/iCubAberystwyth01/1654765868442-iCubAberystwyth01-gallery0.jpg</b>]</li><li>related_projects: [<b>{title:New Project,url:www.myproject.com}</b>]</li><li>custom: [<b>{title:Something to remember,body:This is some information that I want to add for the icub.}</b>]</li></ul>
+db.robots.update ({_id: ObjectId("5fdbf1db9d8a3bc1ead6ee4b")},{$set: { gallery: ["https://storage.googleapis.com/robot-bazaar-files/robots/iCubAberystwyth01/1654765868442-iCubAberystwyth01-gallery0.jpg"],related_projects: [{"title":"New Project","url":"www.myproject.com"}],custom: [{"title":"Something to remember","body":"This is some information that I want to add for the icub."}]}});
