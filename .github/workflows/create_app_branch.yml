@@ -142,6 +142,9 @@ jobs:
             echo "assignees: ${{ steps.get_filedata.outputs.user_list }}"
             echo "branch: ${{ github.event.client_payload.branch_name }}"
               
+      - name: Tell git that my folder is fine
+        run: git config --global --add safe.directory /github/workspace
+        
       - name: pull-request
         uses: AlexAntn/pull-request@master
         env:
